@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright, expect
 from pathlib import Path
+import os
 
 
 def test_search_empty_mock():
@@ -17,7 +18,7 @@ def test_search_empty_mock():
         p.selectors.set_test_id_attribute("data-test")
         browser = p.chromium.launch(
             channel="chrome",
-            headless=False,
+            headless=os.getenv("HEADLESS") == "1",
         )
 
         context = browser.new_context()

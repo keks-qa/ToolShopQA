@@ -27,3 +27,36 @@ jobs:
 
       - name: Pokreni API testove
         run: python -u api_tests.py
+        
+  playwright-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      HEADLESS: "1"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Ukloni prethodni trace iz CI kopije
+        run: rm -f search_trace.zip
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Instaliraj Playwright
+        run: python -m pip install playwright
+
+      - name: Instaliraj Chrome i sistemske dependencies
+        run: python -m playwright install --with-deps chrome
+
+      - name: Pokreni Playwright test
+        run: python -u playwright_mock_test.py
+
+      - name: Sacuvaj trace
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-trace
+          path: search_trace.zip
