@@ -39,7 +39,10 @@ def test_search_empty_mock():
                 ),
             )
 
-            page.goto("https://practicesoftwaretesting.com/")
+            page.goto(os.getenv(
+                "UI_BASE_URL",
+                "https://practicesoftwaretesting.com/",
+            ))
 
             expect(
                 page.get_by_test_id("product-name").first
