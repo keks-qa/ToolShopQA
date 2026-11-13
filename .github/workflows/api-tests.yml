@@ -88,7 +88,7 @@ jobs:
             http://localhost:4200/ >/dev/null
 
         
-        name: Dijagnostika Toolshopa
+      - name: Dijagnostika Toolshopa
         if: failure()
         working-directory: toolshop-app
         run: |
