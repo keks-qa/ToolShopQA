@@ -87,6 +87,14 @@ jobs:
           curl -fsS --retry 90 --retry-delay 2 --retry-connrefused \
             http://localhost:4200/ >/dev/null
 
+        
+        name: Dijagnostika Toolshopa
+        if: failure()
+        working-directory: toolshop-app
+        run: |
+          docker compose -f docker-compose.prod.yml ps -a
+          docker compose -f docker-compose.prod.yml logs --no-color --tail=80 web laravel-api
+
       - name: Pokreni Playwright test
         run: python -u playwright_mock_test.py
 
