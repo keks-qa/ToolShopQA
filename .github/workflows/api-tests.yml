@@ -27,6 +27,7 @@ jobs:
 
       - name: Pokreni API testove
         run: python -u api_tests.py
+
   playwright-tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -36,7 +37,8 @@ jobs:
       UI_BASE_URL: "http://localhost:4200"
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Preuzmi kod
+        uses: actions/checkout@v7
 
       - name: Ukloni prethodni trace
         run: rm -f search_trace.zip
@@ -47,7 +49,8 @@ jobs:
           repository: testsmith-io/practice-software-testing
           path: toolshop-app
 
-      - uses: actions/setup-python@v7
+      - name: Pripremi Python
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -64,7 +67,14 @@ jobs:
             docker compose -f docker-compose.prod.yml "$@"
           }
 
-          compose up --pull missing -d mariadb laravel-api web angular-ui
+          compose pull mariadb laravel-api angular-ui
+
+          docker build \
+            -t testsmith/practice-software-testing-web:latest \
+            -f _docker/web.docker \
+            _docker
+
+          compose up --pull never -d mariadb laravel-api web angular-ui
 
           db_ready=0
           for attempt in {1..60}; do
@@ -87,7 +97,6 @@ jobs:
           curl -fsS --retry 90 --retry-delay 2 --retry-connrefused \
             http://localhost:4200/ >/dev/null
 
-        
       - name: Dijagnostika Toolshopa
         if: failure()
         working-directory: toolshop-app
