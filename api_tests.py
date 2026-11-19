@@ -1,6 +1,12 @@
 import requests
 
-BASE_URL = "https://api.practicesoftwaretesting.com"
+import os
+import requests
+
+BASE_URL = os.getenv(
+    "API_BASE_URL",
+    "https://api.practicesoftwaretesting.com",
+).rstrip("/")
 
 
 def test_filter_and_sort():

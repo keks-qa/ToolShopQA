@@ -9,31 +9,13 @@ permissions:
   contents: read
 
 jobs:
-  api-tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Preuzmi kod
-        uses: actions/checkout@v7
-
-      - name: Pripremi Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-
-      - name: Instaliraj dependencies
-        run: python -m pip install requests
-
-      - name: Pokreni API testove
-        run: python -u api_tests.py
-
-  playwright-tests:
+  toolshop-tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     env:
       HEADLESS: "1"
+      API_BASE_URL: "http://localhost:8091"
       UI_BASE_URL: "http://localhost:4200"
 
     steps:
@@ -54,13 +36,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Instaliraj Playwright
-        run: python -m pip install playwright
+      - name: Instaliraj dependencies
+        run: python -m pip install requests playwright
 
       - name: Instaliraj Chrome i dependencies
         run: python -m playwright install --with-deps chrome
 
       - name: Pokreni i pripremi Toolshop
+        id: prepare
         working-directory: toolshop-app
         run: |
           compose() {
@@ -91,21 +74,32 @@ jobs:
 
           compose exec -T laravel-api php artisan migrate:fresh --seed --force
 
-          curl -fsS --retry 90 --retry-delay 2 --retry-connrefused \
-            http://localhost:8091/products >/dev/null
+          for url in http://localhost:8091/products http://localhost:4200/; do
+            echo "Proveravam dostupnost: $url"
+            curl -fsS \
+              --retry 90 \
+              --retry-delay 2 \
+              --retry-all-errors \
+              --retry-max-time 240 \
+              --connect-timeout 5 \
+              --max-time 15 \
+              --output /dev/null \
+              "$url"
+          done
 
-          curl -fsS --retry 90 --retry-delay 2 --retry-connrefused \
-            http://localhost:4200/ >/dev/null
+      - name: Pokreni API testove
+        run: python -u api_tests.py
+
+      - name: Pokreni Playwright test
+        if: ${{ !cancelled() && steps.prepare.outcome == 'success' }}
+        run: python -u playwright_mock_test.py
 
       - name: Dijagnostika Toolshopa
         if: failure()
         working-directory: toolshop-app
         run: |
           docker compose -f docker-compose.prod.yml ps -a
-          docker compose -f docker-compose.prod.yml logs --no-color --tail=80 web laravel-api
-
-      - name: Pokreni Playwright test
-        run: python -u playwright_mock_test.py
+          docker compose -f docker-compose.prod.yml logs --no-color --tail=80 web laravel-api angular-ui mariadb
 
       - name: Sacuvaj trace
         if: always()
